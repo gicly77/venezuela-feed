@@ -1,52 +1,65 @@
 import streamlit as st
 import requests
 import time
+import streamlit.components.v1 as components
 
-# Configuración profesional de la página
-st.set_page_config(page_title="VENEZUELA CRÍTICO", layout="wide", page_icon="🇻🇪")
+# Configuración de alto impacto
+st.set_page_config(page_title="MONITOR VZLA-USA", layout="wide", page_icon="🇻🇪")
 
-# Estilo de encabezado
-st.title("🇻🇪 Venezuela: Monitor de Eventos en Tiempo Real")
-st.markdown("---")
+# Encabezado con estilo
+st.title("🇻🇪 Monitor Geopolítico: Venezuela - USA")
+st.markdown(f"**Actualización en vivo:** Reportes de Caracas, Washington y el mundo.")
 
-# Tu API Key
+# Tu API Key fija
 API_KEY = "3f543e8fd9154b5595a075c8bd16b98c"
 
-def buscar_noticias_criticas():
-    # Esta búsqueda es mucho más específica: busca reportes oficiales, alertas y última hora
-    terminos = "(Venezuela AND (oficial OR urgente OR alerta OR 'ultima hora' OR comunicado OR crisis))"
-    url = f"https://newsapi.org/v2/everything?q={terminos}&language=es&sortBy=publishedAt&pageSize=20&apiKey={API_KEY}"
+# Layout de dos columnas
+col_prensa, col_redes = st.columns([2, 1])
+
+with col_redes:
+    st.subheader("🐦 X (Twitter) en Vivo")
+    # Feed de X enfocado en noticias de última hora
+    twitter_html = """
+    <a class="twitter-timeline" data-height="1200" data-theme="dark" href="https://twitter.com/ReporteYa?ref_src=twsrc%5Etfw">Reportes de X</a> 
+    <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    """
+    components.html(twitter_html, height=1200)
+
+with col_prensa:
+    st.subheader("📰 Noticias de Última Hora")
+    contenedor_noticias = st.empty()
+
+def buscar_noticias_avanzadas():
+    # Búsqueda con tus nuevas palabras clave estratégicas
+    # Filtramos por Maduro, Trump, Libertad, Caracas y la relación con USA
+    query = "(Venezuela AND (Maduro OR Trump OR 'Donald Trump' OR 'USA' OR 'Estados Unidos' OR 'libertad' OR 'ultima hora' OR 'Caracas'))"
+    url = f"https://newsapi.org/v2/everything?q={query}&language=es&sortBy=publishedAt&pageSize=15&apiKey={API_KEY}"
     
     try:
         r = requests.get(url)
-        datos = r.json()
-        return datos.get('articles', [])
+        return r.json().get('articles', [])
     except:
         return []
 
-# Contenedor dinámico
-feed = st.empty()
-
+# Bucle infinito de monitoreo
 while True:
-    articulos = buscar_noticias_criticas()
+    noticias = buscar_noticias_avanzadas()
     
-    with feed.container():
-        if not articulos:
-            st.info("Esperando nuevos reportes oficiales...")
+    with contenedor_noticias.container():
+        if not noticias:
+            st.warning("Buscando nuevos reportes en las agencias de noticias...")
         else:
-            for art in articulos:
-                # Formato detallado de noticia
+            for art in noticias:
                 with st.container():
-                    col1, col2 = st.columns([1, 3])
-                    with col1:
-                        if art.get('urlToImage'):
-                            st.image(art['urlToImage'], use_container_width=True)
-                    with col2:
-                        st.subheader(art['title'])
-                        st.caption(f"📢 FUENTE: {art['source']['name']} | ⏱️ PUBLICADO: {art['publishedAt']}")
-                        st.write(f"**Resumen:** {art['description']}")
-                        st.markdown(f"[🔗 Leer reporte completo y detalles]({art['url']})")
-                    st.markdown("---")
+                    # Formato de noticia profesional
+                    st.markdown(f"#### {art['title']}")
+                    st.caption(f"🗓️ {art['publishedAt']} | 🏛️ Fuente: {art['source']['name']}")
+                    
+                    if art.get('urlToImage'):
+                        st.image(art['urlToImage'], use_container_width=True)
+                    
+                    st.write(art['description'])
+                    st.markdown(f"[➡️ Ver análisis completo]({art['url']})")
+                    st.divider()
     
-    # Pausa de 30 segundos antes de la siguiente búsqueda
-    time.sleep(30)
+    #
