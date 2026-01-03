@@ -1,40 +1,52 @@
 import streamlit as st
 import requests
-import streamlit.components.v1 as components
+import time
 
-st.set_page_config(page_title="VENEZUELA MONITOR", layout="wide", page_icon="🇻🇪")
+# Configuración profesional de la página
+st.set_page_config(page_title="VENEZUELA CRÍTICO", layout="wide", page_icon="🇻🇪")
 
-st.title("🇻🇪 Venezuela Live: Prensa y Redes")
+# Estilo de encabezado
+st.title("🇻🇪 Venezuela: Monitor de Eventos en Tiempo Real")
+st.markdown("---")
 
-# --- BLOQUE 1: X (TWITTER) - TIEMPO REAL ---
-st.subheader("🐦 Última hora en X (Fuentes Clave)")
-st.caption("Esta sección muestra lo que está pasando en el segundo exacto.")
-
-# Aquí puedes poner la cuenta que prefieras (ej. @PresidencialVen, @ReporteYa, etc.)
-twitter_html = """
-<a class="twitter-timeline" data-height="600" data-theme="dark" href="https://twitter.com/PresidencialVen?ref_src=twsrc%5Etfw">Tweets de Venezuela</a> 
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
-"""
-components.html(twitter_html, height=600, scrolling=True)
-
-st.divider()
-
-# --- BLOQUE 2: PRENSA (API) ---
-st.subheader("📰 Noticias Recientes")
+# Tu API Key
 API_KEY = "3f543e8fd9154b5595a075c8bd16b98c"
 
-def buscar_noticias():
-    url = f"https://newsapi.org/v2/everything?q=Venezuela+urgente+confirmado&language=es&sortBy=publishedAt&apiKey={API_KEY}"
+def buscar_noticias_criticas():
+    # Esta búsqueda es mucho más específica: busca reportes oficiales, alertas y última hora
+    terminos = "(Venezuela AND (oficial OR urgente OR alerta OR 'ultima hora' OR comunicado OR crisis))"
+    url = f"https://newsapi.org/v2/everything?q={terminos}&language=es&sortBy=publishedAt&pageSize=20&apiKey={API_KEY}"
+    
     try:
         r = requests.get(url)
-        return r.json().get('articles', [])[:6]
+        datos = r.json()
+        return datos.get('articles', [])
     except:
         return []
 
-noticias = buscar_noticias()
-for art in noticias:
-    with st.expander(f"📍 {art['source']['name']}: {art['title']}"):
-        if art['urlToImage']:
-            st.image(art['urlToImage'])
-        st.write(art['description'])
-        st.markdown(f"[Leer noticia completa]({art['url']})")
+# Contenedor dinámico
+feed = st.empty()
+
+while True:
+    articulos = buscar_noticias_criticas()
+    
+    with feed.container():
+        if not articulos:
+            st.info("Esperando nuevos reportes oficiales...")
+        else:
+            for art in articulos:
+                # Formato detallado de noticia
+                with st.container():
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        if art.get('urlToImage'):
+                            st.image(art['urlToImage'], use_container_width=True)
+                    with col2:
+                        st.subheader(art['title'])
+                        st.caption(f"📢 FUENTE: {art['source']['name']} | ⏱️ PUBLICADO: {art['publishedAt']}")
+                        st.write(f"**Resumen:** {art['description']}")
+                        st.markdown(f"[🔗 Leer reporte completo y detalles]({art['url']})")
+                    st.markdown("---")
+    
+    # Pausa de 30 segundos antes de la siguiente búsqueda
+    time.sleep(30)
