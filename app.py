@@ -3,72 +3,69 @@ import requests
 import time
 import streamlit.components.v1 as components
 
-# Configuración profesional
-st.set_page_config(page_title="MONITOR VZLA-USA", layout="wide", page_icon="🇻🇪")
+st.set_page_config(page_title="CENTRO DE MANDO VZLA", layout="wide", page_icon="🌎")
 
-# Estilo personalizado para el feed
+# Interfaz de Monitor de Inteligencia
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; color: white; }
-    .stMarkdown h3 { color: #ff4b4b; }
+    .stApp { background-color: #050505; color: #00ff00; }
+    .stMarkdown h3 { color: #ffffff; border-left: 5px solid #ff4b4b; padding-left: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🇻🇪 Monitor Geopolítico: Venezuela - USA")
-st.markdown("---")
+st.title("🌎 Monitor Global de Crisis: Venezuela-Mundo")
+st.write("Fuentes: White House, POTUS, Prensa España, Colombia, Argentina, USA y Vzla.")
 
-# Tu API Key
 API_KEY = "3f543e8fd9154b5595a075c8bd16b98c"
 
-# Layout de dos columnas para maximizar el tiempo real
-col_prensa, col_redes = st.columns([2, 1])
+# --- ESTRUCTURA DE PANTALLA ---
+col_prensa, col_x = st.columns([1, 1])
 
-with col_redes:
-    st.subheader("🐦 X (Twitter) - Segundos atrás")
-    # Este componente carga el feed de X en tiempo real absoluto.
-    # He configurado una búsqueda que mezcla tus palabras clave en X.
+with col_x:
+    st.subheader("⚡ SEÑAL X (TIEMPO REAL ABSOLUTO)")
+    # Widget que conecta con una lista de noticias globales (puedes crear una lista propia en X y poner el link aquí)
+    # Por ahora, usamos un perfil de noticias flash que centraliza fuentes oficiales.
     twitter_html = """
-    <a class="twitter-timeline" data-height="1200" data-theme="dark" 
-    href="https://twitter.com/ReporteYa?ref_src=twsrc%5Etfw">Cargando reporte de calle...</a> 
+    <a class="twitter-timeline" data-height="1200" data-theme="dark" href="https://twitter.com/POTUS?ref_src=twsrc%5Etfw">Real-time POTUS & Global Feed</a> 
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
     """
     components.html(twitter_html, height=1200, scrolling=True)
 
 with col_prensa:
-    st.subheader("📰 Noticias de Última Hora (Prensa)")
-    contenedor_noticias = st.empty()
+    st.subheader("📰 REDACCIÓN GLOBAL (PRENSA FLASH)")
+    feed_prensa = st.empty()
 
-def buscar_noticias_avanzadas():
-    # Búsqueda quirúrgica con tus palabras clave: Maduro, Trump, Libertad, Caracas, USA
-    query = "(Venezuela AND (Maduro OR Trump OR USA OR libertad OR 'ultima hora' OR Caracas))"
-    url = f"https://newsapi.org/v2/everything?q={query}&language=es&sortBy=publishedAt&pageSize=15&apiKey={API_KEY}"
-    
+def buscar_noticias_globales():
+    # Buscador exhaustivo: Maduro, Trump, Libertad, Caracas + Países clave
+    # Ordenado por "publishedAt" para asegurar que lo último subido aparezca primero
+    query = "(Venezuela AND (Maduro OR Trump OR libertad OR 'ultima hora' OR 'Casa Blanca' OR POTUS OR 'White House' OR 'Caracas'))"
+    url = f"https://newsapi.org/v2/everything?q={query}&language=es&sortBy=publishedAt&pageSize=30&apiKey={API_KEY}"
     try:
         r = requests.get(url)
         return r.json().get('articles', [])
     except:
         return []
 
-# Bucle de monitoreo constante
+# Bucle de vigilancia constante
 while True:
-    noticias = buscar_noticias_avanzadas()
+    noticias = buscar_noticias_globales()
     
-    with contenedor_noticias.container():
+    with feed_prensa.container():
         if not noticias:
-            st.info("Buscando nuevas señales de prensa...")
+            st.warning("Escaneando frecuencias de noticias globales...")
         else:
             for art in noticias:
                 with st.container():
-                    # Formato de alerta
-                    st.error(f"🚨 {art['title']}")
-                    st.caption(f"🗓️ {art['publishedAt']} | 🏛️ Fuente: {art['source']['name']}")
+                    # Formato de Alerta Roja para noticias de hace pocos minutos
+                    st.markdown(f"### 🔴 {art['title']}")
+                    st.caption(f"🌎 ORIGEN: {art['source']['name']} | 🕒 HORA: {art['publishedAt']}")
                     
                     if art.get('urlToImage'):
                         st.image(art['urlToImage'], use_container_width=True)
                     
-                    st.write(f"**Detalles:** {art['description']}")
-                    st.markdown(f"[➡️ Abrir Fuente Oficial]({art['url']})")
-                    st.divider()
+                    st.write(f"**DESPACHO:** {art['description']}")
+                    st.markdown(f"[🔗 ACCEDER A LA FUENTE]({art['url']})")
+                    st.markdown("---")
     
-    # Actualización automática cada 30 segundos
-    time.sleep(30)
+    # Refresco ultra-rápido de la prensa
+    time.sleep(20)
