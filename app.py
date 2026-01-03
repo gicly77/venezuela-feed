@@ -1,63 +1,83 @@
 import streamlit as st
-import requests
+import feedparser
 import time
 import streamlit.components.v1 as components
 
-# Configuración de Centro de Mando
-st.set_page_config(page_title="GLOBAL MONITOR VZLA", layout="wide", page_icon="🌎")
+# Configuración de Centro de Inteligencia
+st.set_page_config(page_title="GLOBAL VZLA MONITOR", layout="wide", page_icon="🌎")
 
-# Estética de Terminal de Inteligencia
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: #ffffff; }
-    .stMarkdown h3 { color: #ff4b4b; text-transform: uppercase; letter-spacing: 2px; }
+    .stApp { background-color: #050505; color: #00ff00; }
+    .noticia-card { border-left: 4px solid #ff4b4b; padding: 15px; margin-bottom: 20px; background: #111; }
+    .fuente-tag { color: #ff4b4b; font-weight: bold; text-transform: uppercase; font-size: 0.8em; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🌎 Monitor Global de Crisis: Venezuela-Mundo")
-st.write("Fuentes: White House, POTUS, Prensa España, Colombia, Argentina, USA y Vzla.")
+st.write("Señal combinada: Redacciones Globales (RSS) + Redes Sociales (X)")
 
-API_KEY = "3f543e8fd9154b5595a075c8bd16b98c"
+# --- LISTA DE FUENTES RSS (HABLA HISPANA E INGLESA) ---
+RSS_FEEDS = {
+    "El País (ES)": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",
+    "ABC (ES)": "https://www.abc.es/rss/2.0/internacional/latinoamerica/",
+    "BBC World (UK)": "http://feeds.bbci.co.uk/news/world/rss.xml",
+    "Reuters (INT)": "https://www.reutersagency.com/feed/",
+    "CNN (USA)": "http://rss.cnn.com/rss/edition_world.rss",
+    "Infobae (ARG)": "https://www.infobae.com/feeds/rss/",
+    "El Tiempo (COL)": "https://www.eltiempo.com/rss/mundo.xml"
+}
 
-# --- PANEL DUAL: PRENSA Y REDES ---
-col_prensa, col_x = st.columns([1, 1])
+col_prensa, col_x = st.columns([2, 1])
 
 with col_x:
-    st.subheader("⚡ SEÑAL X (TIEMPO REAL ABSOLUTO)")
-    # El feed de POTUS y agencias internacionales es el único que te dará el "segundo a segundo"
+    st.subheader("⚡ SEÑAL X (TIEMPO REAL)")
+    # Feed de POTUS para reportes de la Casa Blanca al segundo
     twitter_html = """
-    <a class="twitter-timeline" data-height="1200" data-theme="dark" href="https://twitter.com/POTUS?ref_src=twsrc%5Etfw">Real-time Global Feed</a> 
+    <a class="twitter-timeline" data-height="1200" data-theme="dark" href="https://twitter.com/POTUS?ref_src=twsrc%5Etfw">Tweets</a> 
     <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
     """
     components.html(twitter_html, height=1200, scrolling=True)
 
 with col_prensa:
-    st.subheader("📰 REDACCIÓN GLOBAL (PRENSA FLASH)")
-    feed_prensa = st.empty()
+    st.subheader("📡 CABLES DE AGENCIA (RSS GLOBAL)")
+    feed_display = st.empty()
 
-def buscar_noticias_globales():
-    # Búsqueda ampliada a todos los países y términos clave que pediste
-    query = "(Venezuela AND (Maduro OR Trump OR libertad OR 'ultima hora' OR 'Casa Blanca' OR POTUS OR Caracas OR 'Donald Trump'))"
-    url = f"https://newsapi.org/v2/everything?q={query}&language=es&sortBy=publishedAt&pageSize=30&apiKey={API_KEY}"
-    try:
-        r = requests.get(url)
-        return r.json().get('articles', [])
-    except:
-        return []
-
-# Bucle de vigilancia agresiva
-while True:
-    noticias = buscar_noticias_globales()
-    with feed_prensa.container():
-        for art in noticias:
-            with st.container():
-                st.markdown(f"### 🔴 {art['title']}")
-                st.caption(f"🌎 {art['source']['name']} | 🕒 {art['publishedAt']}")
-                if art.get('urlToImage'):
-                    st.image(art['urlToImage'], use_container_width=True)
-                st.write(f"**DESPACHO:** {art['description']}")
-                st.markdown(f"[🔗 ACCEDER A LA FUENTE]({art['url']})")
-                st.divider()
+def obtener_noticias_globales():
+    noticias = []
+    # Palabras clave exhaustivas
+    keywords = ['venezuela', 'maduro', 'trump', 'caracas', 'usa', 'libertad', 'white house', 'biden']
     
-    # Actualización cada 20 segundos para la prensa
-    time.sleep(20)
+    for nombre, url in RSS_FEEDS.items():
+        try:
+            f = feedparser.parse(url)
+            for entry in f.entries:
+                texto_total = (entry.title + entry.get('summary', '')).lower()
+                if any(k in texto_total for k in keywords):
+                    noticias.append({
+                        'titulo': entry.title,
+                        'link': entry.link,
+                        'fuente': nombre,
+                        'fecha': entry.get('published', 'Reciente')
+                    })
+        except:
+            continue
+    return noticias
+
+# Bucle de monitoreo
+while True:
+    lista_noticias = obtener_noticias_globales()
+    with feed_display.container():
+        if not lista_noticias:
+            st.info("Escaneando frecuencias internacionales...")
+        else:
+            for n in lista_noticias[:25]: # Mostramos las 25 más frescas de todas las fuentes
+                st.markdown(f"""
+                <div class="noticia-card">
+                    <span class="fuente-tag">{n['fuente']} | {n['fecha']}</span>
+                    <h3>{n['titulo']}</h3>
+                    <a href="{n['link']}" target="_blank" style="color: #4da3ff;">Abrir despacho oficial →</a>
+                </div>
+                """, unsafe_allow_html=True)
+    
+    time.sleep(15) # Refresco cada 15 segundos
