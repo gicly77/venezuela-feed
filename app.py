@@ -3,7 +3,6 @@ import feedparser
 import time
 import html
 import streamlit.components.v1 as components
-from streamlit_autorefresh import st_autorefresh
 
 # ─────────────────────────────────────────────────────────────
 # 1. CONFIGURACIÓN GENERAL
@@ -14,7 +13,11 @@ st.set_page_config(
     page_icon="📡"
 )
 
-st_autorefresh(interval=30_000, key="auto_refresh")
+# Auto-refresh limpio cada 30s (SIN DEPENDENCIAS)
+components.html(
+    "<meta http-equiv='refresh' content='30'>",
+    height=0
+)
 
 # ─────────────────────────────────────────────────────────────
 # 2. ESTILOS
@@ -22,7 +25,7 @@ st_autorefresh(interval=30_000, key="auto_refresh")
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-.stApp { background-color:#0d1117; color:#c9d1d9; font-family:'Inter',sans-serif; }
+.stApp { background:#0d1117; color:#c9d1d9; font-family:'Inter',sans-serif; }
 
 .loading-bar-bg { position:fixed; top:0; left:0; width:100%; height:3px; background:#161b22; z-index:9999; }
 .loading-bar-fill { height:100%; background:#58a6ff; animation:progress 30s linear infinite; }
@@ -71,14 +74,13 @@ KEYWORDS = [
 ]
 
 # ─────────────────────────────────────────────────────────────
-# 4. CACHE + USER AGENT
+# 4. CACHE FEEDS
 # ─────────────────────────────────────────────────────────────
 @st.cache_data(ttl=60)
 def fetch_feed(url):
     return feedparser.parse(
         url,
-        agent="Mozilla/5.0 StrategicMonitor/1.0",
-        request_headers={"Cache-Control": "no-cache"}
+        agent="Mozilla/5.0 StrategicMonitor/1.0"
     )
 
 # ─────────────────────────────────────────────────────────────
@@ -86,13 +88,13 @@ def fetch_feed(url):
 # ─────────────────────────────────────────────────────────────
 def collect_news():
     pool = []
-    seen_links = set()
+    seen = set()
 
     for source, url in SOURCES:
         feed = fetch_feed(url)
 
         for e in feed.entries[:12]:
-            if not hasattr(e, "link") or e.link in seen_links:
+            if not hasattr(e, "link") or e.link in seen:
                 continue
 
             text = (e.get("title","") + " " + e.get("summary","")).lower()
@@ -104,7 +106,7 @@ def collect_news():
             if not pub:
                 continue
 
-            seen_links.add(e.link)
+            seen.add(e.link)
 
             pool.append({
                 "source": source,
