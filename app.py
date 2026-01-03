@@ -3,139 +3,94 @@ import feedparser
 import time
 import streamlit.components.v1 as components
 
-# Configuración de Terminal de Nueva Generación
-st.set_page_config(page_title="MONITOR ESTRATÉGICO", layout="wide", page_icon="📡")
+# 1. Configuración de la aplicación
+st.set_page_config(page_title="Monitor Directo", layout="wide", page_icon="📡")
 
-# CSS Avanzado: UI Moderna, Barra de Progreso y Glassmorphism
+# 2. CSS Estilizado (Diseño Moderno y Barra de Progreso)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-        background-color: #0d1117;
-        color: #c9d1d9;
-    }
+    .stApp { background-color: #0d1117; color: #c9d1d9; font-family: 'JetBrains Mono', monospace; }
     
-    .main { background-color: #0d1117; padding-top: 0px; }
+    /* Barra de Progreso Superior */
+    .top-bar { position: fixed; top: 0; left: 0; width: 100%; height: 3px; background: #161b22; z-index: 9999; }
+    .progress-fill { height: 100%; background: #58a6ff; width: 0%; animation: load 10s linear infinite; }
+    @keyframes load { from { width: 0%; } to { width: 100%; } }
 
-    /* Barra de Progreso Animada */
-    .progress-container {
-        width: 100%;
-        height: 4px;
-        background-color: #161b22;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 9999;
-    }
+    /* Tarjetas de Noticias */
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px; margin-bottom: 12px; }
+    .card:hover { border-color: #58a6ff; }
+    .alert-card { border-left: 4px solid #f85149; background: #1c1314; }
     
-    .progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, #58a6ff, #f85149);
-        width: 0%;
-        animation: progress-animation 10s linear infinite;
-    }
+    .source-tag { font-size: 0.7rem; color: #8b949e; text-transform: uppercase; font-weight: bold; }
+    .news-title { font-size: 1rem; color: #58a6ff; text-decoration: none; font-weight: 600; display: block; margin: 5px 0; }
+    .news-time { font-size: 0.7rem; color: #484f58; }
     
-    @keyframes progress-animation {
-        0% { width: 0%; }
-        100% { width: 100%; }
-    }
-
-    /* Título Estilizado */
-    .main-title {
-        font-size: 2.2rem;
-        font-weight: 600;
-        letter-spacing: -0.05rem;
-        color: #f0f6fc;
-        margin-top: 1rem;
-        margin-bottom: 0.2rem;
-    }
-
-    /* Tarjetas de Noticias Modernas */
-    .noticia-card {
-        background-color: #161b22;
-        padding: 1.2rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
-        border: 1px solid #30363d;
-        transition: transform 0.2s, border-color 0.2s;
-    }
-    
-    .noticia-card:hover {
-        border-color: #58a6ff;
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    }
-
-    /* Borde sutil para noticias con palabras clave de alerta */
-    .noticia-importante {
-        border-left: 4px solid #f85149;
-    }
-
-    .fuente-tag {
-        text-transform: uppercase;
-        font-size: 0.65rem;
-        font-weight: 700;
-        color: #8b949e;
-        letter-spacing: 0.1rem;
-        margin-bottom: 0.6rem;
-        display: block;
-    }
-
-    .noticia-titulo {
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: #adbac7;
-        text-decoration: none;
-        line-height: 1.4;
-    }
-    
-    .noticia-titulo:hover { color: #58a6ff; }
-
-    .timestamp {
-        font-size: 0.7rem;
-        color: #7d8590;
-        margin-top: 0.8rem;
-        display: block;
-    }
-
-    /* Columnas */
-    .column-header {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #8b949e;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 1.5rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid #30363d;
-    }
-
-    /* Ocultar elementos innecesarios de Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .col-header { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-bottom: 20px; }
     </style>
-    
-    <div class="progress-container">
-        <div class="progress-bar"></div>
-    </div>
+    <div class="top-bar"><div class="progress-fill"></div></div>
     """, unsafe_allow_html=True)
 
-st.markdown('<h1 class="main-title">Monitor de Eventos en Directo</h1>', unsafe_allow_html=True)
-st.markdown('<p style="color: #8b949e; margin-top: -10px; font-size: 0.9rem;">Inteligencia Geopolítica Estricta: Venezuela</p>', unsafe_allow_html=True)
+st.markdown('<h2 style="color:#f0f6fc; margin-top:-20px;">Monitor de Eventos en Directo</h2>', unsafe_allow_html=True)
 
-# --- CONFIGURACIÓN DE FUENTES RSS ---
-RSS_MASTER = {
-    "SEÑAL OFICIAL": [
+# 3. Diccionario de Fuentes RSS (URLs verificadas y cerradas)
+FEEDS = {
+    "OFICIAL": [
         ("White House", "https://www.whitehouse.gov/briefing-room/statements-releases/feed/"),
         ("State Dept", "https://www.state.gov/rss-feed/press-releases/feed/"),
-        ("ONU News", "https://news.un.org/feed/subscribe/es/news/region/latin-america-and-the-caribbean/feed/rss.xml"),
-        ("OEA", "https://www.oas.org/es/centro_noticias/rss.asp")
+        ("UN News", "https://news.un.org/feed/subscribe/es/news/region/latin-america-and-the-caribbean/feed/rss.xml")
     ],
-    "PRENSA GLOBAL": [
+    "GLOBAL": [
         ("El País", "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada"),
-        ("BBC World", "http://feeds.bbci.co.uk/news/world/rss.xml"),
         ("Reuters", "https://www.reutersagency.com/feed/"),
-        ("El Mundo", "https://
+        ("BBC World", "http://feeds.bbci.co.uk/news/world/rss.xml")
+    ],
+    "TERRENO": [
+        ("Efecto Cocuyo", "https://efectococuyo.com/feed/"),
+        ("El Pitazo", "https://elpitazo.net/feed/"),
+        ("Infobae", "https://www.infobae.com/feeds/rss/")
+    ]
+}
+
+# 4. Lógica de Filtrado Estricto
+def display_feed(column, title, sources):
+    with column:
+        st.markdown(f'<div class="col-header">{title}</div>', unsafe_allow_html=True)
+        keywords_vzla = ['venezuela', 'maduro', 'caracas', 'miraflores', 'padrino lópez']
+        keywords_alert = ['gobierno', 'trump', 'guerra', 'ejército', 'golpe', 'sanciones', 'ataque']
+        
+        found = False
+        for name, url in sources:
+            try:
+                f = feedparser.parse(url)
+                for entry in f.entries[:10]:
+                    txt = (entry.title + entry.get('summary', '')).lower()
+                    if any(k in txt for k in keywords_vzla):
+                        found = True
+                        is_alert = any(a in txt for a in keywords_alert)
+                        alert_class = "alert-card" if is_alert else ""
+                        st.markdown(f"""
+                        <div class="card {alert_class}">
+                            <span class="source-tag">{name}</span>
+                            <a class="news-title" href="{entry.link}" target="_blank">{entry.title}</a>
+                            <span class="news-time">{entry.get('published', 'Reciente')}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+            except: continue
+        if not found: st.caption("Sincronizando...")
+
+# 5. Renderizado de Columnas
+c1, c2, c3 = st.columns(3)
+display_feed(c1, "🏛️ Oficial", FEEDS["OFICIAL"])
+display_feed(c2, "🌍 Global", FEEDS["GLOBAL"])
+display_feed(c3, "🇻🇪 Terreno", FEEDS["TERRENO"])
+
+# 6. Sidebar X (Twitter)
+with st.sidebar:
+    st.markdown('<div class="col-header">⚡ SEÑAL X</div>', unsafe_allow_html=True)
+    components.html('<a class="twitter-timeline" data-theme="dark" data-height="800" href="https://twitter.com/POTUS"></a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>', height=800)
+
+# 7. Refresco Automático cada 10s
+time.sleep(10)
+st.rerun()
