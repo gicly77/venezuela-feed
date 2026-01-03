@@ -18,17 +18,21 @@ st.markdown("""
     .headline { color:#60a5fa; text-decoration:none; font-weight:700; font-size:1.1rem; }
     .time-badge { font-size:0.75rem; background:#dc2626; color:white; padding:2px 8px; border-radius:3px; float:right; }
     .header-col { border-bottom: 3px solid #1f2937; padding-bottom:8px; margin-bottom:20px; font-weight:800; text-transform: uppercase; }
-    .emergency-btn { 
-        display: block; width: 100%; padding: 15px; background: #dc2626; color: white; 
-        text-align: center; border-radius: 5px; text-decoration: none; font-weight: bold; margin-bottom: 10px;
+    .live-button {
+        display: inline-block; width: 100%; padding: 20px; background: #dc2626; color: white !important;
+        text-align: center; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 1.2rem;
+        border: 2px solid #ff0000; transition: 0.3s; margin-bottom: 15px;
     }
+    .live-button:hover { background: #ff0000; box-shadow: 0px 0px 15px #ff0000; }
+    .x-button { background: #1d9bf0; border: 2px solid #1d9bf0; }
+    .x-button:hover { background: #0076bf; box-shadow: 0px 0px 15px #1d9bf0; }
     [data-testid="stSidebar"], header, footer { display:none !important; }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown(f'<h1 style="color:#f0f6fc; margin-top:-20px;">🛡️ WAR ROOM: VENEZUELA | LIVE: {datetime.now().strftime("%H:%M:%S")}</h1>', unsafe_allow_html=True)
 
-# --- 3. MOTOR DE NOTICIAS (INTACTO, COMO TE GUSTA) ---
+# --- 3. MOTOR DE NOTICIAS (INTACTO) ---
 def fetch_realtime_news():
     rss_url = "https://news.google.com/rss/search?q=venezuela+when:1h&hl=es-419&gl=VE&ceid=VE:es-419"
     pool = []
@@ -49,13 +53,17 @@ st_autorefresh(interval=60 * 1000, key="war_room_refresh")
 col1, col2 = st.columns([1.3, 1])
 
 with col1:
-    st.markdown('<div class="header-col">📡 TRANSMISIÓN DE EMERGENCIA</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-col">📡 SEÑAL DE VIDEO (DIRECTO)</div>', unsafe_allow_html=True)
     
-    # SOLUCIÓN DE VIDEO: Usamos la señal de RTVE Noticias (Muy estable)
-    # He añadido un botón de respaldo por si el navegador bloquea el embebido.
-    st.markdown('<a href="https://www.rtve.es/noticias/directo/canal-24-horas/" target="_blank" class="emergency-btn">🔴 ABRIR SEÑAL TV EN VIVO (OPCIÓN RESPALDO)</a>', unsafe_allow_html=True)
+    # SOLUCIÓN VIDEO: Dado que los embebidos fallan, usamos una señal M3U8 de respaldo
+    # que se abre en una ventana optimizada o el botón de acceso directo.
+    st.markdown('<a href="https://vaughn.live/embed/video/noticias24h?viewers=true&autoplay=true" target="_blank" class="live-button">🔴 VER CANAL NOTICIAS 24H (VIVO)</a>', unsafe_allow_html=True)
     
-    components.iframe("https://www.youtube.com/embed/8I_v6K8M-68?autoplay=1&mute=1", height=400)
+    # Intentamos un último reproductor alternativo de una fuente que no es YouTube
+    components.html("""
+        <iframe src="https://player.twitch.tv/?channel=rtve&parent=share.streamlit.io&muted=true" 
+        height="360" width="100%" allowfullscreen></iframe>
+    """, height=365)
     
     st.markdown('<div class="header-col" style="margin-top:20px;">📰 RADAR DE ÚLTIMA HORA</div>', unsafe_allow_html=True)
     for n in fetch_realtime_news():
@@ -68,20 +76,30 @@ with col1:
         """, unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="header-col">🐦 INTELIGENCIA X (VÍA WEB)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-col">🐦 INTELIGENCIA X (MÉTODO SEGURO)</div>', unsafe_allow_html=True)
     
-    # SOLUCIÓN DE X: Al ver que el feed se queda en negro, 
-    # la mejor opción es un enlace de "Visualización Rápida" que carga instantáneamente.
+    # SOLUCIÓN X: Para evitar el cuadro en negro, creamos un Panel de Control de X
+    # que te lleva a las búsquedas en vivo y cuentas clave al instante.
     st.markdown("""
-        <div class="card" style="border-left: 4px solid #1d9bf0; text-align: center; padding: 40px 10px;">
-            <h3 style="color:#1d9bf0;">SEÑAL DE X ACTIVA</h3>
-            <p>Debido a restricciones de seguridad de la plataforma, haz clic abajo para ver los reportes en tiempo real.</p>
-            <a href="https://twitter.com/search?q=venezuela&f=live" target="_blank" class="emergency-btn" style="background:#1d9bf0;">
-                VER ÚLTIMOS TWEETS (VENEZUELA)
+        <div class="card" style="border-left: 4px solid #1d9bf0; padding: 20px;">
+            <p style="color:#9ca3af; font-size:0.9rem;">⚠️ Las restricciones de X bloquean el feed incrustado. Usa estos accesos directos de inteligencia:</p>
+            
+            <a href="https://x.com/search?q=venezuela&f=live" target="_blank" class="live-button x-button">
+                🔍 BUSCAR VENEZUELA (EN VIVO)
             </a>
-            <hr style="border: 0.5px solid #1f2937; margin: 20px 0;">
-            <a href="https://twitter.com/AlertaNews24" target="_blank" class="emergency-btn" style="background:#000; border: 1px solid #1d9bf0;">
-                CANAL ALERTA NEWS 24
+            
+            <a href="https://x.com/AlertaNews24" target="_blank" class="live-button x-button" style="background: #000;">
+                📢 ALERTA NEWS 24 (OFICIAL)
             </a>
+
+            <div style="margin-top:20px; padding:10px; background:#0a0d14; border-radius:5px; font-size:0.85rem;">
+                <strong>TIP DE OPERACIONES:</strong> Mantén X abierto en una pestaña lateral y las noticias aquí para monitoreo total.
+            </div>
         </div>
     """, unsafe_allow_html=True)
+    
+    # Intentamos una última carga ligera de un post individual para ver si el navegador permite al menos uno
+    components.html("""
+        <blockquote class="twitter-tweet" data-theme="dark"><a href="https://twitter.com/AlertaNews24/status/1817758371302834641"></a></blockquote>
+        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    """, height=400)
