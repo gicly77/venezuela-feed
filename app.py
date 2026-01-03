@@ -1,9 +1,11 @@
 import streamlit as st
 import feedparser
 from datetime import datetime
+import time
 from streamlit_autorefresh import st_autorefresh
+import streamlit.components.v1 as components
 
-# --- 1. CONFIGURACIÓN DE PÁGINA ---
+# --- 1. CONFIGURACIÓN ---
 st.set_page_config(page_title="WAR ROOM VENEZUELA", layout="wide", page_icon="🛡️")
 
 # --- 2. ESTILO VISUAL ---
@@ -11,70 +13,80 @@ st.markdown("""
 <style>
     .stApp { background:#05070a; color:#e1e1e1; }
     [data-testid="stSidebar"], header, footer { display:none !important; }
-    .news-card { background:#10141b; border:1px solid #1f2937; border-radius:8px; padding:15px; margin-bottom:12px; border-left: 5px solid #ffcc00; }
-    .headline { color:#60a5fa !important; text-decoration:none; font-weight:700; font-size:1.1rem; }
-    .header-col { border-bottom: 3px solid #1f2937; padding-bottom:8px; margin-bottom:20px; font-weight:800; text-transform: uppercase; color: #f0f6fc; }
+    .news-card { background:#10141b; border:1px solid #1f2937; border-radius:8px; padding:15px; margin-bottom:12px; border-left: 5px solid #ffcc00; position: relative; }
+    .headline { color:#60a5fa !important; text-decoration:none; font-weight:700; font-size:1.1rem; display: block; margin-right: 60px; }
+    .time-badge { 
+        position: absolute; top: 15px; right: 15px;
+        font-size:0.7rem; background:#dc2626; color:white; 
+        padding:2px 6px; border-radius:3px; font-weight:bold; 
+    }
+    .source-tag { font-size:0.7rem; color:#9ca3af; font-weight:900; text-transform: uppercase; margin-bottom: 5px; }
+    .header-col { border-bottom: 3px solid #1f2937; padding-bottom:8px; margin-bottom:20px; font-weight:800; text-transform: uppercase; color: #f0f6fc; letter-spacing: 2px;}
 </style>
 """, unsafe_allow_html=True)
 
-st.title(f"🛡️ WAR ROOM: VENEZUELA | {datetime.now().strftime('%H:%M:%S')}")
+st.title(f"🛡️ VENEZUELA INTELLIGENCE CENTER | {datetime.now().strftime('%H:%M:%S')}")
 
-# Refresco automático cada 60 segundos para las noticias
-st_autorefresh(interval=60 * 1000, key="refresh_noticias")
+# Refresco automático cada 60 segundos
+st_autorefresh(interval=60 * 1000, key="global_refresh")
 
-# --- 3. MOTOR DE NOTICIAS (RADAR) ---
-def get_venezuela_news():
-    # Usamos Google News RSS que es infalible
+# --- 3. MOTOR DE NOTICIAS CON HORA ---
+def get_news_with_time():
     url = "https://news.google.com/rss/search?q=venezuela+when:1h&hl=es-419&gl=VE&ceid=VE:es-419"
+    items = []
     try:
         feed = feedparser.parse(url)
-        return feed.entries[:10]
-    except:
-        return []
+        for e in feed.entries[:12]:
+            # Extraer y formatear la hora (formato HH:MM)
+            publicado = e.published_parsed
+            hora_local = time.strftime('%H:%M', publicado) if publicado else "AHORA"
+            
+            items.append({
+                "source": e.source.get('title', 'NOTICIA'),
+                "title": e.title.rsplit(' - ', 1)[0],
+                "link": e.link,
+                "time": hora_local
+            })
+    except: pass
+    return items
 
-# --- 4. DISEÑO DE COLUMNAS ---
-col_video, col_x = st.columns([1.2, 1])
+# --- 4. INTERFAZ ---
+col_left, col_right = st.columns([1, 1.2])
 
-with col_video:
-    st.markdown('<div class="header-col">📡 SEÑAL GLOBAL EN VIVO</div>', unsafe_allow_html=True)
+with col_left:
+    st.markdown('<div class="header-col">📡 RADAR DE NOTICIAS CRÍTICAS</div>', unsafe_allow_html=True)
+    noticias = get_news_with_time()
     
-    # SEÑAL DE VIDEO: Usamos el ID directo de YouTube que permite incrustación
-    # Esta es la señal oficial de RTVE Noticias (Canal 24h)
-    st.video("https://www.youtube.com/watch?v=R_m9m3Uun_o")
-    
-    st.markdown('<div class="header-col" style="margin-top:25px;">📰 RADAR DE ÚLTIMA HORA</div>', unsafe_allow_html=True)
-    noticias = get_venezuela_news()
     if noticias:
         for n in noticias:
             st.markdown(f"""
             <div class="news-card">
-                <div style="font-size:0.7rem; color:#9ca3af; font-weight:900;">{n.source.get('title', 'NOTICIA')}</div>
-                <a class="headline" href="{n.link}" target="_blank">{n.title.rsplit(' - ', 1)[0]}</a>
+                <span class="time-badge">{n['time']}</span>
+                <div class="source-tag">{n['source']}</div>
+                <a class="headline" href="{n['link']}" target="_blank">{n['title']}</a>
             </div>
             """, unsafe_allow_html=True)
     else:
-        st.error("Error al cargar noticias. Reintentando...")
+        st.info("Buscando nuevas actualizaciones...")
 
-with col_x:
-    st.markdown('<div class="header-col">🐦 INTELIGENCIA X (SISTEMA DE ENLACE)</div>', unsafe_allow_html=True)
+with col_right:
+    st.markdown('<div class="header-col">🐦 FEED DE INTELIGENCIA X</div>', unsafe_allow_html=True)
     
-    st.warning("⚠️ La API de X tiene restricciones de servidor. Usa estos accesos directos de alta velocidad:")
-    
-    # BOTONES DE INTELIGENCIA: Abren X en pestañas laterales con búsquedas pre-filtradas
-    st.link_button("🔍 VENEZUELA: ÚLTIMO MINUTO (VIVO)", 
+    # Botón de acceso rápido (siempre funcional)
+    st.link_button("🔥 VER TWEETS RECIENTES (VENEZUELA)", 
                    "https://x.com/search?q=venezuela&f=live", use_container_width=True)
     
-    st.link_button("📢 CANAL DE ALERTA NEWS 24", 
-                   "https://x.com/AlertaNews24", use_container_width=True)
-    
-    st.link_button("📍 SITUACIÓN EN CARACAS (VIVO)", 
-                   "https://x.com/search?q=caracas&f=live", use_container_width=True)
-
-    # Widget visual de apoyo (solo si el navegador lo permite)
     st.markdown("---")
-    st.info("💡 Consejo: Abre una de las pestañas de X a la derecha de tu pantalla para monitoreo simultáneo.")
-    
-    # Intento de cargar un post específico para verificar conexión
-    st.markdown('<div style="background:#10141b; padding:20px; border-radius:8px; border: 1px solid #1d9bf0;">'
-                '<p style="color:#1d9bf0; text-align:center;"><b>Sincronización manual de X activada</b></p>'
-                '</div>', unsafe_allow_html=True)
+
+    # Widget de X para AlertaNews24 (Integración oficial)
+    components.html(
+        """
+        <div id="twitter-container">
+            <a class="twitter-timeline" data-lang="es" data-height="800" data-theme="dark" href="https://twitter.com/AlertaNews24?ref_src=twsrc%5Etfw">
+                Cargando inteligencia de X...
+            </a> 
+        </div>
+        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+        """,
+        height=800,
+    )
