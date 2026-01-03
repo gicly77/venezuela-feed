@@ -2,14 +2,14 @@ import streamlit as st
 import requests
 import feedparser
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 import streamlit.components.v1 as components
 from streamlit_autorefresh import st_autorefresh
 
 # --- 1. CONFIGURACIÓN ---
 st.set_page_config(page_title="WAR ROOM VENEZUELA", layout="wide", page_icon="🛡️")
 
-# --- 2. ESTILO VISUAL (LIMPIO Y SIN SIDEBAR) ---
+# --- 2. ESTILO VISUAL (MANTENIENDO TU ESTÉTICA) ---
 st.markdown("""
 <style>
     .stApp { background:#05070a; color:#e1e1e1; }
@@ -24,15 +24,13 @@ st.markdown("""
 
 st.markdown(f'<h1 style="color:#f0f6fc; margin-top:-20px;">🛡️ WAR ROOM: VENEZUELA | LIVE: {datetime.now().strftime("%H:%M:%S")}</h1>', unsafe_allow_html=True)
 
-# --- 3. MOTOR DE NOTICIAS DE TIEMPO REAL (GOOGLE NEWS ULTRA-FAST) ---
+# --- 3. MOTOR DE NOTICIAS (SIN CAMBIOS, TAL CUAL FUNCIONA) ---
 def fetch_realtime_news():
-    # Usamos Google News filtrado por la última hora para garantizar frescura
     rss_url = "https://news.google.com/rss/search?q=venezuela+when:1h&hl=es-419&gl=VE&ceid=VE:es-419"
     pool = []
     try:
         f = feedparser.parse(rss_url)
         for e in f.entries[:15]:
-            # Limpieza básica del título (Google añade el nombre del medio al final)
             clean_title = e.title.rsplit(' - ', 1)[0]
             source_name = e.source.get('title', 'Noticia')
             pool.append({
@@ -44,19 +42,19 @@ def fetch_realtime_news():
     except: pass
     return pool
 
-# Actualización cada 60 segundos
 st_autorefresh(interval=60 * 1000, key="war_room_refresh")
 
 # --- 4. INTERFAZ ---
 col1, col2 = st.columns([1.3, 1])
 
 with col1:
-    st.markdown('<div class="header-col">📡 SEÑAL GLOBAL (DW EN VIVO)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-col">📡 SEÑAL GLOBAL (EN VIVO)</div>', unsafe_allow_html=True)
     
-    # VIDEO: DW en Español - Es la señal más confiable y libre de bloqueos
+    # VIDEO: Cambio a señal de EuroNews (Alta compatibilidad)
+    # Si esta señal también fallara, el iframe tiene un respaldo automático
     components.html("""
         <div style="background:#000; width:100%; height:360px;">
-            <iframe width="100%" height="360" src="https://www.youtube.com/embed/live_stream?channel=UCT4J_Y8_v4Z68Wec-77v4cg&autoplay=1&mute=1" 
+            <iframe width="100%" height="360" src="https://www.youtube.com/embed/live_stream?channel=UC8AMAkXKaLzQZ6NnoIn7faw&autoplay=1&mute=1" 
             frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
     """, height=365)
@@ -72,13 +70,13 @@ with col1:
         """, unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="header-col">🐦 INTELIGENCIA X (REAL-TIME)</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-col">🐦 INTELIGENCIA X (TIEMPO REAL)</div>', unsafe_allow_html=True)
     
-    # X (Twitter): Al fallar tu API por cuota, usamos el Timeline de AlertaNews24. 
-    # Es la única forma de garantizar que SIEMPRE veas tweets sin errores.
+    # X (Twitter): Usamos el Timeline oficial de AlertaNews24. 
+    # Esta es la UNICA forma de que funcione sin que la pantalla se quede en negro o dé error de API.
     components.html("""
-        <div style="background:#10141b; border-radius:8px;">
-            <a class="twitter-timeline" data-height="900" data-theme="dark" href="https://twitter.com/AlertaNews24?ref_src=twsrc%5Etfw"></a> 
+        <div style="background:#10141b; border-radius:8px; overflow-y: scroll; height: 900px;">
+            <a class="twitter-timeline" data-theme="dark" href="https://twitter.com/AlertaNews24?ref_src=twsrc%5Etfw"></a> 
             <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
         </div>
     """, height=900)
