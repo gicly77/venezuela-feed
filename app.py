@@ -1,60 +1,66 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import requests
 import feedparser
 from datetime import datetime
 import pytz
+import streamlit.components.v1 as components
 
-# 1. CONFIGURACIÓN TÁCTICA
-st.set_page_config(page_title="VENEZUELA INTELLIGENCE", layout="wide")
+# 1. CONFIGURACIÓN DE PANTALLA
+st.set_page_config(page_title="WAR ROOM VENEZUELA", layout="wide")
 
-# Estilo para que el radar se vea profesional
+# 2. HORA MADRID
+madrid_tz = pytz.timezone('Europe/Madrid')
+hora_madrid = datetime.now(madrid_tz).strftime("%H:%M:%S")
+
+# 3. ESTILO CSS RECUPERADO
 st.markdown("""
 <style>
     .stApp { background-color: #05070a; color: #e1e1e1; }
+    [data-testid="stSidebar"], header, footer { display: none !important; }
     .news-card { 
         background: #10141b; border: 1px solid #1f2937; padding: 15px; 
-        margin-bottom: 10px; border-left: 5px solid #ffcc00; border-radius: 8px;
+        margin-bottom: 12px; border-left: 5px solid #ffcc00; border-radius: 8px;
     }
+    .headline { color: #60a5fa !important; text-decoration: none; font-weight: bold; font-size: 1.1rem; }
 </style>
 """, unsafe_allow_html=True)
 
-# 2. FUNCIÓN DE INSERCIÓN OFICIAL (oEmbed)
-def get_x_embed(url):
+# 4. ESTRUCTURA DE COLUMNAS
+col_noticias, col_x = st.columns([2, 1])
+
+with col_noticias:
+    st.markdown(f"## 🛡️ RADAR VENEZUELA | MADRID: {hora_madrid}")
+    st.markdown("---")
+    
+    # Motor de noticias RSS (Restaurado)
     try:
-        # Solicitamos el HTML oficial a X
-        api_url = f"https://publish.twitter.com/oembed?url={url}&theme=dark&omit_script=false"
-        response = requests.get(api_url)
-        if response.status_code == 200:
-            return response.json()["html"]
-        return "Error: No se pudo obtener el feed."
-    except:
-        return "Error de conexión con X."
-
-# 3. INTERFAZ DE COLUMNAS
-col_radar, col_x = st.columns([2, 1])
-
-with col_radar:
-    st.header("🛡️ RADAR CRÍTICO VENEZUELA")
-    # Simulación de carga de noticias (puedes mantener tu código RSS aquí)
-    st.markdown('<div class="news-card"><b>TELEMUNDO:</b> Trump dice que EE.UU. dirigirá Venezuela...</div>', unsafe_allow_html=True)
+        url_rss = "https://news.google.com/rss/search?q=venezuela+when:1h&hl=es-419&gl=VE&ceid=VE:es-419"
+        feed = feedparser.parse(url_rss)
+        if feed.entries:
+            for e in feed.entries[:10]:
+                st.markdown(f"""
+                <div class="news-card">
+                    <div style="font-size:0.7rem; color:#888;">{e.source.get('title', 'Noticia')}</div>
+                    <a class="headline" href="{e.link}" target="_blank">{e.title.rsplit(' - ', 1)[0]}</a>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Esperando nuevas actualizaciones del radar...")
+    except Exception:
+        st.error("Reconectando radar de noticias...")
 
 with col_x:
-    st.subheader("🐦 INTELIGENCIA X")
+    st.markdown("### 🐦 INTELIGENCIA X")
     
-    # URL de un post reciente de una cuenta de inteligencia (ej. AlertaNews24)
-    # Es vital usar una URL de un POST específico para que el widget se active
-    target_url = "https://twitter.com/AlertaNews24/status/1875323267591602521" 
-    
-    html_content = get_x_embed(target_url)
-    
-    # Renderizado forzado
+    # Método 3 Oficial: Línea de tiempo incrustada (Perfil Público)
+    # He usado el perfil de AlertaNews24 como fuente por ser de alta actividad
     components.html(
-        f"""
-        <div style="display: flex; justify-content: center;">
-            {html_content}
+        """
+        <div style="height: 800px; overflow-y: auto;">
+            <a class="twitter-timeline" data-theme="dark" href="https://twitter.com/AlertaNews24?ref_src=twsrc%5Etfw">
+                Cargando Inteligencia X...
+            </a> 
+            <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
         </div>
         """,
-        height=800,
-        scrolling=True
+        height=850,
     )
